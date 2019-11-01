@@ -17,8 +17,6 @@ for event in *{'keypressed', 'keyreleased', 'mousepressed', 'mousereleased'}
 
 love.draw = SESSION\frame
 
-require 'moon.all'
-
 -- Move = (obj, x, y) ->
 --   if COMMIT
 --     obj.x = x

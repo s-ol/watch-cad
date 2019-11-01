@@ -1,6 +1,7 @@
 { graphics: lg } = love
 
 import vec2, bound2 from require 'cpml'
+import is_once, is_live, are_live, Once from require 'state'
 
 random =
   point: ->
@@ -11,7 +12,19 @@ random =
     vec2 math.random! * 200 + 100, math.random! * 200 + 100
 
 draw =
-  rect: (mode, min, max) ->
+  cross: (pos) ->
+    hs = vec2 8, 8
+    mx, my = (pos - hs)\unpack!
+    Mx, My = (pos + hs)\unpack!
+    
+    lg.setColor 1, 1, 1
+    lg.line mx, my, Mx, My
+    lg.line mx, My, Mx, my
+
+    contains = (INPUT.mouse - pos)\len2! < hs\len2!
+    INPUT\mouse_event! if contains
+
+  rect: (min, max) ->
     x, y = min\unpack!
     w, h = (max - min)\unpack!
     lg.setColor 1, 1, 1
@@ -19,69 +32,88 @@ draw =
 
     rect = bound2 min, max
     contains = rect\contains INPUT.mouse
-    contains and (not mode or INPUT["mouse_#{mode}"] INPUT, 1)
+    INPUT\mouse_event! if contains
 
-  circle: (mode, center, r) ->
+  circle: (center, r) ->
     x, y = center\unpack!
     lg.setColor 1, 1, 1
     lg.circle 'line', x, y, r
 
     contains = (INPUT.mouse - center)\len! < r
-    contains and (not mode or INPUT["mouse_#{mode}"] INPUT, 1)
+    INPUT\mouse_event! if contains
 
 half_handle = vec2 15, 15
 input =
-  dot: (init, fixed) =>
-    init or= random.point!
+  point: (fixed={}) =>
+    if vec = is_once fixed
+      fixed = {
+        x: Once vec.x
+        y: Once vec.y
+      }
 
-    if fixed == true
-      return init
-    
-    fixed or= x: false, y: false
-    @pos = (rawget @, 'pos') or init
+    init = random.point!
+    @store 'x', fixed.x, init.x
+    @store 'y', fixed.y, init.y
+    pos = vec2 @x, @y
 
-    if draw.rect 'held', @pos - half_handle, @pos + half_handle
-      delta = INPUT\mouse_delta!
-      @pos = @pos + delta
+    -- both values are 'live', no UI necessary
+    if are_live fixed.x, fixed.y
+      draw.cross pos
+      return pos
 
-    @pos.x = init.x if fixed.x
-    @pos.y = init.y if fixed.y
+    hh = half_handle\clone!
+    hh.x /= 2 if is_live fixed.x
+    hh.y /= 2 if is_live fixed.y
 
-    @pos
+    @init 'drag', false
+    if 'down' == draw.rect pos - hh, pos + hh
+      @drag = true
 
-  rectangle: (init={}, fixed={}) =>
-    init.min or= random.point! * 0.8
-    init.max or= init.min + random.size!
-    @last_min = (rawget @, 'last_min') or init.min
+    if @drag
+      @drag = false if INPUT\mouse_up!
 
-    max = input.dot @max, init.max, fixed.max
-    min = input.dot @min, init.min, fixed.min
-    delta = @last_min - min
-    max += delta
-    @last_min = min
+      pos += INPUT\mouse_delta!
 
-    draw.rect nil, min, max
+      @store 'x', pos.x unless is_live fixed.x
+      @store 'y', pos.y unless is_live fixed.y
+
+    vec2 @x, @y
+
+  point_relative_to: (other, fixed) =>
+    assert (is_live other), "other needs to be live!"
+
+    @init 'last_other', other
+    @init 'last', fixed or random.point!
+    delta = other - @last_other
+
+    val = if delta\len2! > 0 and not is_live fixed
+      input.point @, @last + delta
+    else
+      input.point @, fixed or Once @last
+
+    @store 'last_other', other
+    @store 'last', val
+
+    val
+
+  rectangle: (fixed={}) =>
+    min = input.point @min, fixed.min or Once random.point! * 0.8
+    max = input.point_relative_to @max, min, fixed.max or Once min + random.size!
+
+    draw.rect min, max
     { :min, :max }
 
-  circle: (init={}, fixed={}) =>
-    init.center or= random.point!
-    init.radius or= math.random! * 100 + 50
-    init.tangent or= do
-      angle = math.random! * math.pi * 2
-      init.center + vec2.from_cartesian init.radius, angle
-    
-    center  = input.dot @c, init.center, fixed.center
+  circle: (fixed={}) =>
+    local tangent
+    center = input.point @center, fixed.center
+    radius = (is_live fixed.radius) or do
+      radius = (is_once fixed.radius) or math.random! * 100 + 50
+      init_tangent = vec2.from_cartesian radius, math.random! * 2 * math.pi
+      tangent = input.point_relative_to @tangent, center, fixed.tangent or Once center + init_tangent
+      center\dist tangent
 
-    local tangent, radius
-    if fixed.radius
-      radius = init.radius
-    else
-      tangent = input.dot @t, init.tangent, fixed.tangent
-      radius = (tangent - center)\len!
-
-    draw.circle nil, center, radius
-
-    { center, tangent, :radius }
+    draw.circle center, radius
+    { :center, :tangent, :radius }
 
   selection: (init, fixed) =>
     init or= {o for o in *OBJS when match and o.name\match init}

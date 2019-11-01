@@ -12,6 +12,11 @@ class Input
   mouse_up:   (button=1) => @key_up   "mouse-#{button}"
   mouse_held: (button=1) => @key_held "mouse-#{button}"
 
+  mouse_event: (button=1) =>
+    return 'down' if @mouse_down button
+    return 'up'   if @mouse_up   button
+    return 'held' if @mouse_held button
+
   key_down: (key) => @keys[key] and not @last_keys[key]
   key_up:   (key) => not @keys[key] and @last_keys[key]
   key_held: (key) => @keys[key]

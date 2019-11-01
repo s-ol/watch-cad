@@ -1,4 +1,5 @@
 lfs = require 'lfs'
+moon = require 'moonscript.base'
 
 trace = (msg) -> debug.traceback msg, 2
 
@@ -46,7 +47,7 @@ class Script
 
     if @last_modification < modification
       @last_modification = modification
-      module, msg = loadfile @file
+      module, msg = if @file\match '%.moon$' then moon.loadfile @file else loadfile @file
       if not module
         @error = at: 'parse', :msg
         return
