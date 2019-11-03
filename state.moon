@@ -22,6 +22,53 @@ is_live = (val) -> (not is_once val) and val
 are_once = all is_once
 are_live = all is_live
 
+class Cursor
+  @__base.__index = do
+    old_index = @__base.__index
+    (k) =>
+      if v = old_index[k]
+        return v
+
+      if 'string' == type k
+        return @get_nested k
+
+  new: (@state, @path='') =>
+
+  set: (value) =>
+    @state.values[@path] = value
+    value
+
+  get: (value) =>
+    @state.values[@path]
+
+  init: (value) =>
+    old = @get!
+    if old != nil
+      old
+    else
+      @set value
+
+  drive: (live_or_once) =>
+    if val = is_once live_or_once
+      @init val
+    else
+      @set live_or_once
+
+  get_nested: (name) =>
+    if #@path > 0
+      name = "#{@path}.#{name}"
+
+    Cursor @state, name
+
+  __call: => @get!
+  __tostring: => @path
+  __eq: (other) => @path == other.path
+
+  @is_cursor: (val) ->
+    return unless val
+    return unless 'table' == type val
+    val.__class == @@
+
 class State
   @mt: {
     __index: (t, k) ->
@@ -38,33 +85,21 @@ class State
       default = val
     rawset @, key, (rawget @, key) or default
 
-  -- store and return a piece of state under 'key'.
-  -- the current and stored value is the first of the following:
-  -- * 'fixed', if it is a 'live' value
-  -- * current state, if set
-  -- * 'fixed', if it is a 'once' value
-  -- * 'default'
-  store: (key, fixed, default) =>
-    state = rawget @, key
-    once = Once.is_once fixed
-
-    next_state = if is_live fixed
-      fixed
-    elseif state
-      state
-    elseif once
-      fixed.value
-    else
-      default
-
-    with next_state
-      rawset @, key, next_state
-
   new: =>
     @reset!
 
   reset: =>
-    @state = setmetatable {}, @@mt
+    @values = setmetatable {}, {
+      __index: (k) =>
+        if Cursor.is_cursor k
+          k = tostring k
+        rawget @, k
+      __newindex: (k, v) =>
+        if Cursor.is_cursor k
+          k = tostring k
+        rawset @, k, v
+    }
+    @root = Cursor @
 
 {
   :is_once, :are_once
