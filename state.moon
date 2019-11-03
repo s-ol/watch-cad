@@ -4,23 +4,12 @@ class Once
   new: (@value) =>
 
   @is_once: (val) ->
-    return unless val
-    return unless 'table' == type val
+    return false unless val
+    return false unless 'table' == type val
     val.__class == @@
 
-all = (f) -> (...) ->
-  values = for i = 1, select '#', ...
-    val = f select i, ...
-    return unless val
-    val
-
-  unpack values
-
 is_once = (val) -> (Once.is_once val) and val.value
-is_live = (val) -> (not is_once val) and val
-
-are_once = all is_once
-are_live = all is_live
+is_live = (val) -> (not Once.is_once val) and val
 
 class Cursor
   @__base.__index = do
@@ -65,8 +54,8 @@ class Cursor
   __eq: (other) => @path == other.path
 
   @is_cursor: (val) ->
-    return unless val
-    return unless 'table' == type val
+    return false unless val
+    return false unless 'table' == type val
     val.__class == @@
 
 class State
@@ -102,8 +91,9 @@ class State
     @root = Cursor @
 
 {
-  :is_once, :are_once
-  :is_live, :are_live
+  :is_once
+  :is_live
   :Once
+  :Cursor
   :State
 }

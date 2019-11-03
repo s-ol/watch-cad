@@ -1,11 +1,11 @@
-import Once, State from require 'state'
+import is_once, is_live, Once, Cursor, State from require 'state'
 
 describe "Once", ->
   it "stores a value", ->
     a = Once 3
     assert.is.equal 3, a.value
 
-  it "can test for itself", ->
+  it "can identify instances", ->
     assert.is_true Once.is_once Once 3
     assert.is_true Once.is_once Once 2
     assert.is_true Once.is_once Once nil
@@ -16,6 +16,40 @@ describe "Once", ->
     assert.is_falsy Once.is_once 3
     assert.is_falsy Once.is_once "once impostor"
     assert.is_falsy Once.is_once { a: 3 }
+
+describe "is_once", ->
+  it "returns false for live or nil values", ->
+    assert.is_false is_once "string"
+    assert.is_false is_once {}
+    assert.is_false is_once 3
+    assert.is_false is_once nil
+    assert.is_false is_once false
+
+  it "unwraps Once values", ->
+    tbl = {}
+    assert.is_equal 3,     is_once Once 3
+    assert.is_equal tbl,   is_once Once tbl
+    assert.is_equal "str", is_once Once "str"
+    assert.is_equal false, is_once Once false
+    assert.is_equal nil,   is_once Once nil
+
+describe "is_live", ->
+  it "returns false for Once values", ->
+    assert.is_false is_live Once "string"
+    assert.is_false is_live Once {}
+    assert.is_false is_live Once 3
+    assert.is_false is_live Once nil
+    assert.is_false is_live Once false
+
+  it "passes live values through", ->
+    tbl = {}
+    assert.is_equal 3,     is_live 3
+    assert.is_equal tbl,   is_live tbl
+    assert.is_equal "str", is_live "str"
+    assert.is_equal "str", is_live "str"
+    assert.is_equal false, is_live false
+    assert.is_equal nil,   is_live nil
+
 
 describe "State", ->
   local state
@@ -115,3 +149,11 @@ describe "State", ->
         assert.is_equal 'initial', cursor\drive Once 'other'
         assert.is_equal 'live in', cursor\drive 'live in'
 
+    it "can identify instances", ->
+      assert.is_true  Cursor.is_cursor state.root
+      assert.is_true  Cursor.is_cursor state.root.deep.nested
+
+      assert.is_false Cursor.is_cursor state
+      assert.is_false Cursor.is_cursor nil
+      assert.is_false Cursor.is_cursor 2
+      assert.is_false Cursor.is_cursor "test"
