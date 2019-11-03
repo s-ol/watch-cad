@@ -5,9 +5,8 @@ trace = (msg) -> debug.traceback msg, 2
 
 class Script
   new: (@file) =>
-    print "loading script '#{@file}'..."
     @last_modification = 0
-    @func = -> print 'idle'
+    @func = ->
 
   commit: =>
     export COMMIT
@@ -15,7 +14,7 @@ class Script
 
     return unless @func
 
-    ok, msg = xpcall @func, trace, STATE.state
+    ok, msg = xpcall @func, trace, STATE.root
     if not ok
       @error = at: 'commit', :msg
       return
@@ -26,7 +25,7 @@ class Script
     func = @reload!
     @func = func if func
 
-    ok, msg = xpcall @func, trace, STATE.state
+    ok, msg = xpcall @func, trace, STATE.root
     if not ok
       @error = at: 'exec', :msg
 
@@ -43,7 +42,10 @@ class Script
       print @error.msg
 
   reload: =>
-    modification = lfs.attributes @file, 'modification'
+    { :mode, :modification } = lfs.attributes @file
+    if mode != 'file'
+      @error = at: 'parse', msg: "script doesn't exist or is not a file: '#{@file}'"
+      return
 
     if @last_modification < modification
       @last_modification = modification

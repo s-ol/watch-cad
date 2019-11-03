@@ -5,7 +5,7 @@ import is_once, is_live, are_live, Once from require 'state'
 
 random =
   point: ->
-    w, h = love.graphics.getDimensions!
+    w, h = lg.getDimensions!
     vec2 w*math.random!, h*math.random!
 
   size: ->
@@ -45,73 +45,64 @@ draw =
 half_handle = vec2 15, 15
 input =
   point: (fixed={}) =>
-    if vec = is_once fixed
-      fixed = {
-        x: Once vec.x
-        y: Once vec.y
-      }
+    last = @init random.point!
+    pos = last\clone!
 
-    init = random.point!
-    @store 'x', fixed.x, init.x
-    @store 'y', fixed.y, init.y
-    pos = vec2 @x, @y
+    live_x, live_y = (is_live fixed.x), is_live fixed.y
+
+    pos.x = fixed.x if live_x
+    pos.y = fixed.y if live_y
 
     -- both values are 'live', no UI necessary
-    if are_live fixed.x, fixed.y
+    if live_x and live_y
       draw.cross pos
-      return pos
+      @set pos
+      delta = pos - last
+      return delta\len2! > 0 and delta
 
+    -- handle size (square or rect)
     hh = half_handle\clone!
-    hh.x /= 2 if is_live fixed.x
-    hh.y /= 2 if is_live fixed.y
+    hh.x /= 2 if live_x
+    hh.y /= 2 if live_y
 
-    @init 'drag', false
     if 'down' == draw.rect pos - hh, pos + hh
-      @drag = true
+      @drag\set true
 
-    if @drag
-      @drag = false if INPUT\mouse_up!
+    if @drag!
+      if INPUT\mouse_up!
+        @drag\set false
 
-      pos += INPUT\mouse_delta!
+      delta = INPUT\mouse_delta!
+      delta.x = 0 if live_x
+      delta.y = 0 if live_y
+      pos += delta
 
-      @store 'x', pos.x unless is_live fixed.x
-      @store 'y', pos.y unless is_live fixed.y
-
-    vec2 @x, @y
-
-  point_relative_to: (other, fixed) =>
-    assert (is_live other), "other needs to be live!"
-
-    @init 'last_other', other
-    @init 'last', fixed or random.point!
-    delta = other - @last_other
-
-    val = if delta\len2! > 0 and not is_live fixed
-      input.point @, @last + delta
-    else
-      input.point @, fixed or Once @last
-
-    @store 'last_other', other
-    @store 'last', val
-
-    val
+    @set pos
+    delta = last and pos - last
+    return delta and delta\len2! > 0 and delta
 
   rectangle: (fixed={}) =>
-    min = input.point @min, fixed.min or Once random.point! * 0.8
-    max = input.point_relative_to @max, min, fixed.max or Once min + random.size!
+    delta = input.point @min, fixed.min or Once random.point! * 0.8
+    input.point         @max, fixed.max or Once @min! + random.size!
+    @max\set @max! + delta if delta
 
+    min, max = @min!, @max!
     draw.rect min, max
-    { :min, :max }
+    @set { :min, :max }
 
   circle: (fixed={}) =>
     local tangent
-    center = input.point @center, fixed.center
+    delta = input.point @center, fixed.center
+
     radius = (is_live fixed.radius) or do
       radius = (is_once fixed.radius) or math.random! * 100 + 50
       init_tangent = vec2.from_cartesian radius, math.random! * 2 * math.pi
-      tangent = input.point_relative_to @tangent, center, fixed.tangent or Once center + init_tangent
-      center\dist tangent
+      input.point @tangent, fixed.tangent or Once @center! + init_tangent
+      @center!\dist @tangent!
 
+    @tangent\set @tangent! + delta if delta and tangent
+
+    center, tangent = @center!, @tangent!
     draw.circle center, radius
     { :center, :tangent, :radius }
 
