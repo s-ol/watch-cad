@@ -42,7 +42,7 @@ class Script
       print @error.msg
 
   reload: =>
-    { :mode, :modification } = lfs.attributes @file
+    { :mode, :modification } = (lfs.attributes @file) or {}
     if mode != 'file'
       @error = at: 'parse', msg: "script doesn't exist or is not a file: '#{@file}'"
       return
