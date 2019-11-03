@@ -77,7 +77,6 @@ class Session
       @script\commit!
       STATE\reset!
 
-    INPUT\end_frame!
 
 {
   :Script
