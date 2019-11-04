@@ -50,8 +50,30 @@ draw =
 
 half_handle = vec2 15, 15
 input =
+  slider: (min=0, max=1) =>
+    @init min
+
+    origin = vec2 50, 50
+    length = 200
+    final = origin + vec2 length, 0
+    draw.line origin, final
+
+    if input.point @value, y: origin.y, x: Once min
+      val = math.max origin.x, math.min final.x, @value!.x
+      @value!.x = val
+      @set min + (val - origin.x) / length * max
+      return true
+  
   point: (fixed={}) =>
-    last = @init random.point!
+    init = if val = is_once fixed
+      val
+    else
+      with random.point!
+        if x = is_once fixed.x
+          .x = x
+        if y = is_once fixed.y
+          .y = y
+    last = @init init
     pos = last\clone!
 
     live_x, live_y = (is_live fixed.x), is_live fixed.y
@@ -68,8 +90,8 @@ input =
 
     -- handle size (square or rect)
     hh = half_handle\clone!
-    hh.x /= 2 if live_x
-    hh.y /= 2 if live_y
+    hh.y /= 2 if live_x
+    hh.x /= 2 if live_y
 
     if 'down' == draw.rect pos - hh, pos + hh
       @drag\set true
