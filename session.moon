@@ -62,9 +62,13 @@ class Script
       @error = nil
       msg
 
+import Object from require 'object'
+
 class Session
   new: (@script) =>
     @objects = {}
+    for i=1,4
+      table.insert @objects, Object nil, random.size!/8
 
   frame: =>
     for obj in *@objects

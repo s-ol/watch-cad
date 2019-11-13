@@ -11,6 +11,28 @@ random =
   size: ->
     vec2 math.random! * 200 + 100, math.random! * 200 + 100
 
+hit =
+  radius: (pos, r) ->
+    hit.radius2 pos, r*r
+
+  radius2: (pos, r2) ->
+    contains = (INPUT.mouse - pos)\len2! < r2
+    INPUT\mouse_event! or 'hover' if contains
+
+  line: (frm, to, r2=10) ->
+    delta = to - frm
+    mouse = INPUT.mouse - frm
+    dot = (mouse\dot delta) / delta\len2!
+    dot = math.min 1, math.max 0, dot
+    p = frm + delta * dot
+
+    hit.radius2 p, r2
+
+  rect: (min, max) ->
+    rect = bound2 min, max
+    contains = rect\contains INPUT.mouse
+    INPUT\mouse_event! or 'hover' if contains
+
 draw =
   cross: (pos) ->
     hs = vec2 8, 8
@@ -21,14 +43,21 @@ draw =
     lg.line mx, my, Mx, My
     lg.line mx, My, Mx, my
 
-    contains = (INPUT.mouse - pos)\len2! < hs\len2!
-    INPUT\mouse_event! if contains
+    hit.radius2 pos, hs\len2!
 
   line: (frm, to) ->
     lg.setColor 1, 1, 1
     lg.line frm.x, frm.y, to.x, to.y
 
-    -- @TODO: hit checking
+    hit.line frm, to
+
+  arrow: (frm, to) ->
+    dir = (to - frm)\normalize!
+    up = dir\perpendicular!
+    draw.line to - dir * 15 + up * 7, to
+    draw.line to - dir * 15 - up * 7, to
+
+    draw.line frm, to
 
   rect: (min, max) ->
     x, y = min\unpack!
@@ -36,17 +65,14 @@ draw =
     lg.setColor 1, 1, 1
     lg.rectangle 'line', x, y, w, h
 
-    rect = bound2 min, max
-    contains = rect\contains INPUT.mouse
-    INPUT\mouse_event! if contains
+    hit.rect min, max
 
   circle: (center, r) ->
     x, y = center\unpack!
     lg.setColor 1, 1, 1
     lg.circle 'line', x, y, r
 
-    contains = (INPUT.mouse - center)\len! < r
-    INPUT\mouse_event! if contains
+    hit.radius2 center, r*r
 
 half_handle = vec2 15, 15
 input =
@@ -109,7 +135,23 @@ input =
     delta = last and pos - last
     return delta and delta\len2! > 0 and delta
 
-  rectangle: do
+  line: (frm, to) =>
+    input.point @frm, frm
+    input.point @to, to
+
+    frm, to = @frm!, @to!
+    @set :frm, :to
+    draw.line frm, to
+
+  arrow: (frm, to) =>
+    input.point @frm, frm
+    input.point @to, to
+
+    frm, to = @frm!, @to!
+    @set :frm, :to
+    draw.line frm, to
+
+  rect: do
     meta = size: => @max - @min
     meta.__index = meta
 
@@ -146,24 +188,37 @@ input =
 
   selection: (pattern) =>
     -- @TOOD: fix
-    @init {o for o in *SESSION.objects when match and o.name\match init}
+    @init {o,o for o in *SESSION.objects when match and o.name\match init}
 
-    lg.push 'all'
-    lg.setLineWidth 5
-    for obj in *OBJS
-      selected = @selection[obj]
+    selection = @!
+    index = {o,i for i,o in ipairs selection}
+
+    to_remove = {}
+    for obj in *SESSION.objects
+      selected = index[obj]
       if selected
-        obj\draw 'line', orng
+        draw.cross obj.pos
+        -- obj\draw 'line', orng
 
-      if obj\hit!
-        @selection[obj] = if selected then nil else obj
+      if obj\hit! == 'down'
+        if selected
+          table.insert to_remove, selected
+        else
+          table.insert selection, obj
 
-    lg.pop!
+    table.sort to_remove
+    for i=#to_remove,1,-1
+      table.remove selection, to_remove[i]
 
-    [o for o in pairs @selection]
+op =
+  move: (obj, to) ->
+    draw.arrow obj.pos, to
+    obj\draw!
 
 {
+  :hit
   :random
   :draw
   :input
+  :op
 }

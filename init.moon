@@ -5,13 +5,13 @@ profile = require 'profile'
 
 export ^
 
+for k, v in pairs require 'api'
+  _G[k] = v
+
 COMMIT = false
 INPUT = Input!
 STATE = State!
 SESSION = Session Script arg[#arg]
-
-for k, v in pairs require 'api'
-  _G[k] = v
 
 love.draw = ->
   p = INPUT\key_down 'p'

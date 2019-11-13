@@ -20,6 +20,7 @@ class Input
     return 'down' if @key_down key
     return 'up'   if @key_up   key
     return 'held' if @key_held key
+    return 'hover'
 
   mouse_pos: => @mouse
   mouse_delta: => @mouse - @last_mouse

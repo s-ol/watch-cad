@@ -5,7 +5,7 @@ import vec2 from require 'cpml'
 
 =>
   -- let's try to construct a pill-shape
-  input.rectangle @rect
+  input.rect @rect
   rect = @rect!
   hsize = (rect.max - rect.min) / 2
 
