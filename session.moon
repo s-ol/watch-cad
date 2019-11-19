@@ -1,6 +1,8 @@
 lfs = require 'lfs'
+utf8 = require 'utf8'
 moon = require 'moonscript.base'
 
+{ graphics: lg } = love
 trace = (msg) -> debug.traceback msg, 2
 
 class Script
@@ -65,10 +67,25 @@ class Script
 import Object from require 'object'
 
 class Session
-  new: (@script) =>
+  FONTSIZE = 20
+  new: (scriptfile) =>
     @objects = {}
     for i=1,4
-      table.insert @objects, Object nil, random.size!/8
+      print
+      -- table.insert @objects, Object nil, random.size!/8
+
+    if scriptfile
+      @script = Script scriptfile
+
+    @font = lg.newFont 'font/FantasqueSansMono-Regular.ttf', 20
+    @ex = false
+
+  exec: (command) =>
+    switch command\match '^(%w+)'
+      when 'quit'
+        love.event.quit!
+      when 'run'
+        @script = Script command\match '^run%s+(.+)'
 
   frame: =>
     for obj in *@objects
@@ -77,12 +94,31 @@ class Session
     if INPUT\key_down 'escape'
       STATE\reset!
 
-    @script\reload_and_run!
+    w,h = lg.getDimensions!
+    lg.setFont @font
 
-    if INPUT\key_down 'space'
-      @script\commit!
-      STATE\reset!
+    if @script
+      @script\reload_and_run!
 
+      if INPUT\key_down 'space'
+        @script\commit!
+        STATE\reset!
+        
+      lg.print "script: #{@script.file}", 10, 10
+
+    if (INPUT\key_down ':') or (INPUT\key_down ';') and INPUT\key_held 'lshift'
+      INPUT\text_capture!
+      @ex = true
+
+    if @ex
+      lg.print ":#{INPUT.text}", 10, h - 10 - FONTSIZE
+      
+      apply = INPUT\key_down 'return'
+      input = if apply or INPUT\key_down 'escape'
+        @ex = nil
+        apply and @exec INPUT\text_release!
+
+      @exec input if input
 
 {
   :Script

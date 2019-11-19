@@ -8,10 +8,13 @@ export ^
 for k, v in pairs require 'api'
   _G[k] = v
 
+scriptfile = arg[#arg]
+scriptfile = nil if scriptfile == '.'
+
 COMMIT = false
 INPUT = Input!
 STATE = State!
-SESSION = Session Script arg[#arg]
+SESSION = Session scriptfile
 
 love.draw = ->
   p = INPUT\key_down 'p'
@@ -24,8 +27,10 @@ love.draw = ->
     profile.stop!
     print love.timer.getFPS!
     print profile.report 20
+
 love.keypressed    = INPUT\keypressed
 love.keyreleased   = INPUT\keyreleased
+love.textinput     = INPUT\textinput
 love.mousemoved    = INPUT\mousemoved
 love.mousepressed  = INPUT\mousepressed
 love.mousereleased = INPUT\mousereleased
