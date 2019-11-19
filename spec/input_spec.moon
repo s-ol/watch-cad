@@ -9,7 +9,7 @@ describe "Input", ->
     assert.is_falsy input\mouse_down!
     assert.is_falsy input\mouse_up!
     assert.is_falsy input\mouse_held!
-    assert.is_falsy input\mouse_event!
+    assert.is_equal 'hover', input\mouse_event!
     assert.is_falsy input\key_down  'w'
     assert.is_falsy input\key_up    'w'
     assert.is_falsy input\key_held  'w'
@@ -94,3 +94,30 @@ describe "Input", ->
     assert.is_falsy input\key_held 'a'
     assert.is_falsy input\key_down 'a'
     assert.is_equal 'up', input\key_event 'a'
+
+  it "allows capturing the keyboard", ->
+    input\text_capture!
+    assert.has_error -> input\text_capture!
+
+    input\textinput 'Helloo'
+    input\keypressed 'backspace'
+    assert.is_falsy input\key_down 'backspace'
+    input\frame!
+
+    assert.is_equal 'Hello', input.text
+    input\textinput ' World'
+    assert.is_equal 'Hello World', input.text
+    assert.is_falsy input\key_down 'backspace'
+
+  it "doesn't capture meta-keys (return and escape)", ->
+    input\keypressed 'return'
+    input\keypressed 'escape'
+
+    assert.is_true input\key_down 'return'
+    assert.is_true input\key_down 'escape'
+
+  it "returns the input' text after releasing the keyboard", ->
+    assert.is_equal 'Hello World', input\text_release!
+
+    input\keypressed 'backspace'
+    assert.is_true input\key_down 'backspace'
