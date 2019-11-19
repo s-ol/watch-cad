@@ -15,11 +15,8 @@ function draw_star(S)
     local r = (i % 2 == 0) and inner.radius or outer.radius
     local pos = inner.center + vec2.from_cartesian(r, step * i)
 
-    draw.cross(pos)
+    op.add(pos, vec2(20, 20))
     draw.line(pos, lag)
-    
-    -- obj = Object("object_"..i, pos, vec2(20, 20))
-    -- op.add(obj)
     
     lag = pos
   end

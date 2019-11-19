@@ -2,6 +2,13 @@
 
 import vec2, bound2 from require 'cpml'
 import is_once, is_live, are_live, Once from require 'state'
+import Object from require 'object'
+
+pushpop = (fn) ->
+  (...) ->
+    lg.push 'all'
+    with fn ...
+      lg.pop!
 
 random =
   point: ->
@@ -39,14 +46,12 @@ draw =
     mx, my = (pos - hs)\unpack!
     Mx, My = (pos + hs)\unpack!
     
-    lg.setColor 1, 1, 1
     lg.line mx, my, Mx, My
     lg.line mx, My, Mx, my
 
     hit.radius2 pos, hs\len2!
 
   line: (frm, to) ->
-    lg.setColor 1, 1, 1
     lg.line frm.x, frm.y, to.x, to.y
 
     hit.line frm, to
@@ -62,14 +67,12 @@ draw =
   rect: (min, max) ->
     x, y = min\unpack!
     w, h = (max - min)\unpack!
-    lg.setColor 1, 1, 1
     lg.rectangle 'line', x, y, w, h
 
     hit.rect min, max
 
   circle: (center, r) ->
     x, y = center\unpack!
-    lg.setColor 1, 1, 1
     lg.circle 'line', x, y, r
 
     hit.radius2 center, r*r
@@ -211,9 +214,27 @@ input =
       table.remove selection, to_remove[i]
 
 op =
-  move: (obj, to) ->
+  move: pushpop (obj, to) ->
     draw.arrow obj.pos, to
-    obj\draw!
+
+    lg.setColor .8, .8, 0
+    copy = obj\copy!
+    copy.pos = to
+    copy\draw!
+
+    if COMMIT
+      obj.pos = to
+
+  add: pushpop (pos, size) ->
+    tmp = Object pos, size
+
+    lg.setColor 0, .8, 0
+    tmp\draw!
+
+    if COMMIT
+      table.insert SESSION.objects, tmp
+
+    tmp
 
 {
   :hit

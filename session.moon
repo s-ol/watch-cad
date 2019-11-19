@@ -70,9 +70,6 @@ class Session
   FONTSIZE = 20
   new: (scriptfile) =>
     @objects = {}
-    for i=1,4
-      print
-      -- table.insert @objects, Object nil, random.size!/8
 
     if scriptfile
       @script = Script scriptfile
@@ -85,9 +82,11 @@ class Session
       when 'quit'
         love.event.quit!
       when 'run'
-        @script = Script command\match '^run%s+(.+)'
+        arg = command\match '^run%s+(.+)'
+        @script = arg and Script arg
 
   frame: =>
+    lg.setColor 1, 1, 1
     for obj in *@objects
       obj\draw!
 
@@ -98,12 +97,19 @@ class Session
     lg.setFont @font
 
     if @script
+      lg.setColor .5, .5, .5
+      depth = lg.getStackDepth!
+
       @script\reload_and_run!
 
       if INPUT\key_down 'space'
         @script\commit!
         STATE\reset!
+
+      while lg.getStackDepth! > depth
+        lg.pop!
         
+      lg.setColor 1, 1, 1
       lg.print "script: #{@script.file}", 10, 10
 
     if (INPUT\key_down ':') or (INPUT\key_down ';') and INPUT\key_held 'lshift'
@@ -111,6 +117,7 @@ class Session
       @ex = true
 
     if @ex
+      lg.setColor 1, 1, 1
       lg.print ":#{INPUT.text}", 10, h - 10 - FONTSIZE
       
       apply = INPUT\key_down 'return'
