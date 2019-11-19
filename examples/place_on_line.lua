@@ -1,5 +1,4 @@
--- return function (state)
-function place_in_rect(S)
+function place_on_line(S)
   input.selection(S.objs, '^led-')
   input.line(S.dest)
 
