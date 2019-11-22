@@ -152,7 +152,7 @@ input =
 
     frm, to = @frm!, @to!
     @set :frm, :to
-    draw.line frm, to
+    draw.arrow frm, to
 
   rect: do
     meta = size: => @max - @min
@@ -235,6 +235,25 @@ op =
       table.insert SESSION.objects, tmp
 
     tmp
+
+  remove: pushpop (obj) ->
+    lg.setColor .8, 0, 0
+    copy = obj\copy!
+    copy\draw!
+
+    if COMMIT
+      SESSION.objects = [o for o in *SESSION.objects when o != obj]
+
+  copy: pushpop (obj, pos) ->
+    lg.setColor 0, .8, 0
+    copy = obj\copy!
+    copy.pos = pos
+    copy\draw!
+
+    if COMMIT
+      table.insert SESSION.objects, copy
+
+    copy
 
 {
   :hit

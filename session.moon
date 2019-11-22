@@ -6,7 +6,8 @@ moon = require 'moonscript.base'
 trace = (msg) -> debug.traceback msg, 2
 
 class Script
-  new: (@file) =>
+  new: (file='scratch.moon') =>
+    @file = "library/#{file}"
     @last_modification = 0
     @func = ->
 
@@ -83,7 +84,7 @@ class Session
         love.event.quit!
       when 'run'
         arg = command\match '^run%s+(.+)'
-        @script = arg and Script arg
+        @script = Script arg
 
   frame: =>
     lg.setColor 1, 1, 1
