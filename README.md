@@ -11,6 +11,7 @@ The API that is made available to the code lets you easily define direct manipul
 allowing you to effortlessy string together custom tools as you go along.
 
 With this flexibility, creating custom tools and using them blend together into a single workflow that powers `watch-cad`.
+You can Watch a Proof-of-Concept video [here](https://www.youtube.com/watch?v=3_gDRfFtPEQ).
 
 status
 ------
